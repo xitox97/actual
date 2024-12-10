@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { useSelector } from 'react-redux';
 
 import { t } from 'i18next';
 
@@ -66,16 +65,11 @@ export function TransactionListWithBalances({
   balanceUncleared,
   searchPlaceholder = 'Search...',
   onSearch,
+  isLoadingMore,
   onLoadMore,
   onOpenTransaction,
   onRefresh,
 }) {
-  const newTransactions = useSelector(state => state.queries.newTransactions);
-
-  const isNewTransaction = id => {
-    return newTransactions.includes(id);
-  };
-
   const selectedInst = useSelected('transactions', transactions);
 
   return (
@@ -111,7 +105,7 @@ export function TransactionListWithBalances({
         <TransactionList
           isLoading={isLoading}
           transactions={transactions}
-          isNewTransaction={isNewTransaction}
+          isLoadingMore={isLoadingMore}
           onLoadMore={onLoadMore}
           onOpenTransaction={onOpenTransaction}
         />

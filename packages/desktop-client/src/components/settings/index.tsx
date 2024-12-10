@@ -1,13 +1,13 @@
 import React, { type ReactNode, useEffect } from 'react';
+import { useDispatch } from 'react-redux';
 
 import { css } from '@emotion/css';
 import { t } from 'i18next';
 
+import { closeBudget, loadPrefs } from 'loot-core/client/actions';
 import { isElectron } from 'loot-core/shared/environment';
 import { listen } from 'loot-core/src/platform/client/fetch';
 
-import { useActions } from '../../hooks/useActions';
-import { useFeatureFlag } from '../../hooks/useFeatureFlag';
 import { useGlobalPref } from '../../hooks/useGlobalPref';
 import { useIsOutdated, useLatestVersion } from '../../hooks/useLatestVersion';
 import { useMetadataPref } from '../../hooks/useMetadataPref';
@@ -127,17 +127,20 @@ function AdvancedAbout() {
 export function Settings() {
   const [floatingSidebar] = useGlobalPref('floatingSidebar');
   const [budgetName] = useMetadataPref('budgetName');
+  const dispatch = useDispatch();
 
-  const { loadPrefs, closeBudget } = useActions();
+  const onCloseBudget = () => {
+    dispatch(closeBudget());
+  };
 
   useEffect(() => {
     const unlisten = listen('prefs-updated', () => {
-      loadPrefs();
+      dispatch(loadPrefs());
     });
 
-    loadPrefs();
+    dispatch(loadPrefs());
     return () => unlisten();
-  }, [loadPrefs]);
+  }, [dispatch]);
 
   const { isNarrowWidth } = useResponsive();
 
@@ -170,14 +173,14 @@ export function Settings() {
                 style={{ color: theme.buttonNormalDisabledText }}
               />
             </FormField>
-            <Button onPress={closeBudget}>{t('Close Budget')}</Button>
+            <Button onPress={onCloseBudget}>{t('Close Budget')}</Button>
           </View>
         )}
         <About />
         <ThemeSettings />
         <FormatSettings />
         <EncryptionSettings />
-        {useFeatureFlag('reportBudget') && <BudgetTypeSettings />}
+        <BudgetTypeSettings />
         {isElectron() && <Backups />}
         <ExportBudget />
         <AdvancedToggle>
