@@ -1,9 +1,10 @@
-import { useEffect, useRef, useState, useMemo } from 'react';
+import { useEffect, useRef, useState, useMemo, useCallback } from 'react';
 
 import debounce from 'lodash/debounce';
 
 import { send } from '../../platform/client/fetch';
 import { type Query } from '../../shared/query';
+import { getScheduledAmount } from '../../shared/schedules';
 import { ungroupTransactions } from '../../shared/transactions';
 import {
   type ScheduleEntity,
@@ -23,17 +24,19 @@ type UseTransactionsProps = {
 
 type UseTransactionsResult = {
   transactions: ReadonlyArray<TransactionEntity>;
-  isLoading?: boolean;
+  isLoading: boolean;
   error?: Error;
-  reload?: () => void;
-  loadMore?: () => void;
+  reload: () => void;
+  loadMore: () => void;
+  isLoadingMore: boolean;
 };
 
 export function useTransactions({
   query,
   options = { pageCount: 50 },
 }: UseTransactionsProps): UseTransactionsResult {
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [error, setError] = useState<Error | undefined>(undefined);
   const [transactions, setTransactions] = useState<
     ReadonlyArray<TransactionEntity>
@@ -87,12 +90,32 @@ export function useTransactions({
     };
   }, [query]);
 
+  const loadMore = useCallback(async () => {
+    if (!pagedQueryRef.current) {
+      return;
+    }
+
+    setIsLoadingMore(true);
+
+    await pagedQueryRef.current
+      .fetchNext()
+      .catch(setError)
+      .finally(() => {
+        setIsLoadingMore(false);
+      });
+  }, []);
+
+  const reload = useCallback(() => {
+    pagedQueryRef.current?.run();
+  }, []);
+
   return {
     transactions,
     isLoading,
     error,
-    reload: pagedQueryRef.current?.run,
-    loadMore: pagedQueryRef.current?.fetchNext,
+    reload,
+    loadMore,
+    isLoadingMore,
   };
 }
 
@@ -112,7 +135,7 @@ export function usePreviewTransactions(): UsePreviewTransactionsResult {
     schedules,
     statuses,
   } = useCachedSchedules();
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(isSchedulesLoading);
   const [error, setError] = useState<Error | undefined>(undefined);
 
   const scheduleTransactions = useMemo(() => {
@@ -129,7 +152,7 @@ export function usePreviewTransactions(): UsePreviewTransactionsResult {
       id: 'preview/' + schedule.id,
       payee: schedule._payee,
       account: schedule._account,
-      amount: schedule._amount,
+      amount: getScheduledAmount(schedule._amount),
       date: schedule.next_date,
       schedule: schedule.id,
     }));
