@@ -66,7 +66,7 @@ type UseSchedulesResult = ScheduleData & {
 export function useSchedules({
   query,
 }: UseSchedulesProps = {}): UseSchedulesResult {
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | undefined>(undefined);
   const [data, setData] = useState<ScheduleData>({
     schedules: [],
@@ -161,7 +161,7 @@ export function useCachedSchedules() {
 }
 
 export function accountSchedulesQuery(
-  accountId?: AccountEntity['id'] | 'budgeted' | 'offbudget' | 'uncategorized',
+  accountId?: AccountEntity['id'] | 'onbudget' | 'offbudget' | 'uncategorized',
 ) {
   const filterByAccount = accountFilter(accountId, '_account');
   const filterByPayee = accountFilter(accountId, '_payee.transfer_acct');
